@@ -1,0 +1,32 @@
+name: Import existing H Access production page
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/import-production.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-production:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: true
+      - name: Download current deployed HTML
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --retry 3 --max-time 40 \
+            https://residence.hamthelholdings.com/ -o index.html
+          test "$(wc -c < index.html)" -gt 20000
+          grep -qi '<title>H Access</title>' index.html
+          grep -qi 'supabase' index.html
+      - name: Commit imported production source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || (git commit -m "Import current H Access production HTML" && git push)
