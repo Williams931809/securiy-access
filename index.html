@@ -94,12 +94,12 @@ const dismissed=()=>Number(sessionStorage.getItem('haccess-install-dismissed')||
 function refresh(){const installed=standalone();const eligible=!!deferred||(ios()&&safari());settings.hidden=installed;banner.hidden=installed||!eligible||dismissed();}
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;refresh()});
 window.addEventListener('appinstalled',()=>{deferred=null;sessionStorage.removeItem('haccess-install-dismissed');refresh()});
-async function install(){if(standalone()){refresh();return}if(deferred){const p=deferred;deferred=null;try{await p.prompt();await p.userChoice}catch(e){}refresh();return}if(ios()){if(safari()){help.hidden=false;return}alert('Open H Access in Safari, then tap Share and Add to Home Screen.');return}alert('To install H Access, use your browser menu and choose Install app or Add to Home Screen.')}
+async function install(){if(standalone()){refresh();return}if(deferred){const p=deferred;deferred=null;try{await p.prompt();const choice=await p.userChoice;if(choice&&choice.outcome==='dismissed'){sessionStorage.setItem('haccess-install-dismissed',String(Date.now()+86400000))}}catch(e){alert('The browser could not start installation. Open Chrome’s menu and choose Add to Home screen or Install app. If that also fails, check that the site is fully loaded over HTTPS.')}refresh();return}if(ios()){if(safari()){help.hidden=false;return}alert('Open H Access in Safari, then tap Share and Add to Home Screen.');return}alert('To install H Access, use your browser menu and choose Install app or Add to Home Screen.')}
 document.getElementById('pwaInstallNow').addEventListener('click',install);document.getElementById('installFromSettings').addEventListener('click',install);
 document.getElementById('pwaInstallDismiss').addEventListener('click',()=>{sessionStorage.setItem('haccess-install-dismissed',String(Date.now()+7*86400000));refresh()});
 document.getElementById('pwaIosClose').addEventListener('click',()=>help.hidden=true);
 window.matchMedia('(display-mode: standalone)').addEventListener?.('change',refresh);
-if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{}));
 refresh();
 })();
 </script></body></html>
